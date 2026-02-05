@@ -57,6 +57,8 @@ http://localhost:8050
 - `EGX30_SYMBOL` (optional override for the Yahoo Finance symbol, default: `^EGX30`)
 - `TWELVE_DATA_API_KEY` (optional, for EGX30 live data from Twelve Data)
 - `EGX30_TWELVE_SYMBOL` (optional Twelve Data symbol, default: `EGS69491M015`)
+- `EOD_API_KEY` (optional, for EGX30 historical data from EOD)
+- `EGX30_EOD_SYMBOL` (optional EOD symbol, default: `EGX30.INDX`)
 - `MASSIVE_API_KEY` (optional, fallback for EGX30 live data from Massive API)
 - `EGX30_TICKER` (optional Massive ticker, default: `I:EGX30`)
 
@@ -70,6 +72,8 @@ services:
       EGX30_SYMBOL: ^EGX30
       TWELVE_DATA_API_KEY: your_twelve_data_key_here
       EGX30_TWELVE_SYMBOL: EGS69491M015
+      EOD_API_KEY: your_eod_key_here
+      EGX30_EOD_SYMBOL: EGX30.INDX
       MASSIVE_API_KEY: your_massive_key_here
       EGX30_TICKER: I:EGX30
 ```

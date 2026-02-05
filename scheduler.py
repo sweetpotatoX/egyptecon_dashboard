@@ -29,13 +29,14 @@ def update_economic_data():
     db.insert_inflation_data(data['inflation'])
     db.insert_exchange_rate_history(data['exchange_rate_history'])
     db.insert_exchange_rate(data['exchange_rate_latest'])
+    db.insert_egx30_history(data['egx30_history'])
     db.insert_egx30_latest(data['egx30_latest'])
 
     print(f"[{datetime.now()}] Data update completed!")
 
 
 def update_market_data_only():
-    """Fetch latest market data (USD/EGP, EGX30) and update database"""
+    """Fetch latest market data (USD/EGP) and update database"""
     print(f"[{datetime.now()}] Updating latest market data...")
 
     from data_fetcher import EconomicDataFetcher
@@ -46,9 +47,7 @@ def update_market_data_only():
 
     db.create_tables()
     latest_fx = fetcher.fetch_exchange_rate()
-    latest_egx30 = fetcher.fetch_egx30_latest()
     db.insert_exchange_rate(latest_fx)
-    db.insert_egx30_latest(latest_egx30)
 
     print(f"[{datetime.now()}] Latest market data updated!")
 

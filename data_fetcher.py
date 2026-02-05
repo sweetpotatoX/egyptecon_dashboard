@@ -199,6 +199,54 @@ class EconomicDataFetcher:
             print(f"Error fetching exchange rate: {e}")
             return None
 
+    def fetch_egx30_history(self):
+        """
+        Fetch historical EGX30 index (daily)
+        Returns: DataFrame with columns [date, egx30_index]
+        """
+        if not self.eod_api_key:
+            return pd.DataFrame()
+
+        start_date = f"{self.start_year}-01-01"
+        end_date = datetime.now().strftime("%Y-%m-%d")
+        url = f"{self.eod_base}/eod/{self.eod_egx30_symbol}"
+        params = {
+            'api_token': self.eod_api_key,
+            'fmt': 'json',
+            'from': start_date,
+            'to': end_date,
+            'order': 'a'
+        }
+
+        try:
+            response = requests.get(url, params=params, timeout=15)
+            response.raise_for_status()
+            data = response.json()
+
+            if not isinstance(data, list) or not data:
+                print("No EGX30 history returned from API")
+                return pd.DataFrame()
+
+            records = []
+            for item in data:
+                price = item.get('close')
+                date_str = item.get('date')
+                if price is None or not date_str:
+                    continue
+                date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+                records.append({
+                    'date': date_obj,
+                    'egx30_index': round(float(price), 2)
+                })
+
+            df = pd.DataFrame(records)
+            df = df.sort_values('date')
+            return df
+
+        except Exception as e:
+            print(f"Error fetching EGX30 history: {e}")
+            return pd.DataFrame()
+
     def fetch_egx30_latest(self):
         """
         Fetch latest EGX30 index level (best-effort, unofficial source)
@@ -336,6 +384,7 @@ class EconomicDataFetcher:
             'inflation': self.fetch_inflation(),
             'exchange_rate_history': self.fetch_exchange_rate_history(),
             'exchange_rate_latest': self.fetch_exchange_rate(),
+            'egx30_history': self.fetch_egx30_history(),
             'egx30_latest': self.fetch_egx30_latest()
         }
 

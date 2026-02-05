@@ -241,6 +241,35 @@ class EconomicDatabase:
         finally:
             self.close()
 
+    def insert_egx30_history(self, df):
+        """Insert EGX30 history data from DataFrame"""
+        if df is None or df.empty:
+            return
+
+        if not self.connect():
+            return
+
+        try:
+            cursor = self.conn.cursor()
+            values = [(row['date'], row['egx30_index']) for _, row in df.iterrows()]
+
+            execute_values(cursor, """
+                INSERT INTO egx30_data (date, egx30_index)
+                VALUES %s
+                ON CONFLICT (date) DO UPDATE
+                SET egx30_index = EXCLUDED.egx30_index
+            """, values)
+
+            self.conn.commit()
+            cursor.close()
+            print(f"Inserted {len(values)} EGX30 records")
+
+        except Exception as e:
+            print(f"Error inserting EGX30 history: {e}")
+            self.conn.rollback()
+        finally:
+            self.close()
+
     def get_all_gdp(self):
         """Retrieve all GDP data"""
         if not self.connect():
@@ -325,6 +354,7 @@ if __name__ == "__main__":
     db.insert_inflation_data(data['inflation'])
     db.insert_exchange_rate_history(data['exchange_rate_history'])
     db.insert_exchange_rate(data['exchange_rate_latest'])
+    db.insert_egx30_history(data['egx30_history'])
     db.insert_egx30_latest(data['egx30_latest'])
 
     print("\nRetrieved GDP data:")
