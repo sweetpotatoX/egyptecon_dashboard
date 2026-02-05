@@ -55,7 +55,10 @@ http://localhost:8050
 
 - `DATABASE_URL` (default set in `docker-compose.yml`)
 - `EGX30_SYMBOL` (optional override for the Yahoo Finance symbol, default: `^EGX30`)
-- `MASSIVE_API_KEY` (optional, for EGX30 live data from Massive API)
+- `TWELVE_DATA_API_KEY` (optional, for EGX30 live data from Twelve Data)
+- `EGX30_TWELVE_SYMBOL` (optional Twelve Data symbol, default: `EGS69491M015`)
+- `MASSIVE_API_KEY` (optional, fallback for EGX30 live data from Massive API)
+- `EGX30_TICKER` (optional Massive ticker, default: `I:EGX30`)
 
 Example override using Docker Compose:
 
@@ -65,7 +68,10 @@ services:
     environment:
       DATABASE_URL: postgresql://egyptecon:egyptecon_secure_password_change_me@db:5432/egyptecon
       EGX30_SYMBOL: ^EGX30
-      MASSIVE_API_KEY: your_api_key_here
+      TWELVE_DATA_API_KEY: your_twelve_data_key_here
+      EGX30_TWELVE_SYMBOL: EGS69491M015
+      MASSIVE_API_KEY: your_massive_key_here
+      EGX30_TICKER: I:EGX30
 ```
 
 ## Deployment (Server)

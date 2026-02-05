@@ -24,8 +24,12 @@ class EconomicDataFetcher:
         self.exchange_timeseries = "https://api.exchangerate.host/timeseries"
         self.egx30_symbol = os.getenv('EGX30_SYMBOL', '^EGX30')
         self.egx30_min_interval_sec = int(os.getenv('EGX30_MIN_INTERVAL_SEC', '300'))
+        self.twelve_data_api_key = os.getenv('TWELVE_DATA_API_KEY')
+        self.twelve_data_symbol = os.getenv('EGX30_TWELVE_SYMBOL', 'EGS69491M015')
+        self.twelve_data_quote_url = "https://api.twelvedata.com/quote"
         self.massive_api_key = os.getenv('MASSIVE_API_KEY')
-        self.massive_egx30_url = "https://api.massive.com/v1/indices/EGX30"
+        self.massive_base = "https://api.massive.com"
+        self.egx30_ticker = os.getenv('EGX30_TICKER', 'I:EGX30')
         self.yahoo_chart_base = "https://query1.finance.yahoo.com/v8/finance/chart"
         self.start_year = 1980  # Data starts from 1980s
 
@@ -207,14 +211,59 @@ class EconomicDataFetcher:
                 if age < timedelta(seconds=self.egx30_min_interval_sec):
                     return _EGX30_CACHE['value']
 
-            if self.massive_api_key:
-                params = {'apiKey': self.massive_api_key}
-                response = requests.get(self.massive_egx30_url, params=params, timeout=10)
+            if self.twelve_data_api_key:
+                params = {
+                    'symbol': self.twelve_data_symbol,
+                    'apikey': self.twelve_data_api_key
+                }
+                response = requests.get(self.twelve_data_quote_url, params=params, timeout=10)
                 response.raise_for_status()
                 data = response.json()
 
-                price = data.get('lastPrice')
-                timestamp = data.get('timestamp')
+                if data.get('status') == 'error':
+                    print(f"EGX30 Twelve Data error: {data.get('message')}")
+                    return None
+
+                price = data.get('close') or data.get('price') or data.get('last')
+                timestamp = data.get('datetime') or data.get('timestamp')
+                if price is None:
+                    return None
+
+                if timestamp:
+                    try:
+                        parsed = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+                        ts = parsed.replace(tzinfo=None)
+                    except Exception:
+                        ts = now
+                else:
+                    ts = now
+
+                result = {
+                    'date': ts.replace(microsecond=0),
+                    'egx30_index': round(float(price), 2)
+                }
+                _EGX30_CACHE['timestamp'] = now
+                _EGX30_CACHE['value'] = result
+                return result
+
+            if self.massive_api_key:
+                url = f"{self.massive_base}/v3/snapshot/indices"
+                params = {
+                    'ticker.any_of': self.egx30_ticker,
+                    'apiKey': self.massive_api_key
+                }
+                response = requests.get(url, params=params, timeout=10)
+                response.raise_for_status()
+                data = response.json()
+
+                results = data.get('results') or []
+                item = results[0] if results else {}
+                price = (
+                    item.get('value') or
+                    item.get('last') or
+                    (item.get('session') or {}).get('value')
+                )
+                timestamp = item.get('last_updated_utc') or item.get('updated')
                 if price is None:
                     return None
 
