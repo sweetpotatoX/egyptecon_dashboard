@@ -114,9 +114,47 @@ class EconomicDataFetcher:
             print(f"Error fetching inflation: {e}")
             return pd.DataFrame()
 
+    def fetch_exchange_rate_history(self):
+        """
+        Fetch historical USD/EGP exchange rate from World Bank (annual)
+        Returns: DataFrame with columns [date, usd_egp_rate]
+        """
+        url = f"{self.world_bank_base}/PA.NUS.FCRF"
+        params = {
+            'format': 'json',
+            'per_page': 1000,
+            'date': f'{self.start_year}:{datetime.now().year}'
+        }
+
+        try:
+            response = requests.get(url, params=params, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+
+            if len(data) < 2 or data[1] is None:
+                print("No exchange rate history returned from API")
+                return pd.DataFrame()
+
+            records = []
+            for item in data[1]:
+                if item['value'] is not None:
+                    date_obj = datetime(int(item['date']), 1, 1)
+                    records.append({
+                        'date': date_obj,
+                        'usd_egp_rate': round(float(item['value']), 4)
+                    })
+
+            df = pd.DataFrame(records)
+            df = df.sort_values('date')
+            return df
+
+        except Exception as e:
+            print(f"Error fetching exchange rate history: {e}")
+            return pd.DataFrame()
+
     def fetch_exchange_rate(self):
         """
-        Fetch current USD/EGP exchange rate
+        Fetch current USD/EGP exchange rate (latest)
         Returns: Dictionary with {date, usd_egp_rate}
         """
         try:
@@ -144,7 +182,8 @@ class EconomicDataFetcher:
         return {
             'gdp': self.fetch_gdp(),
             'inflation': self.fetch_inflation(),
-            'exchange_rate': self.fetch_exchange_rate()
+            'exchange_rate_history': self.fetch_exchange_rate_history(),
+            'exchange_rate_latest': self.fetch_exchange_rate()
         }
 
 
@@ -157,4 +196,4 @@ if __name__ == "__main__":
     print("\nInflation Data:")
     print(data['inflation'].head() if not data['inflation'].empty else "No data")
     print("\nExchange Rate:")
-    print(data['exchange_rate'])
+    print(data['exchange_rate_latest'])

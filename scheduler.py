@@ -27,22 +27,49 @@ def update_economic_data():
     # Update database
     db.insert_gdp_data(data['gdp'])
     db.insert_inflation_data(data['inflation'])
-    db.insert_exchange_rate(data['exchange_rate'])
+    db.insert_exchange_rate_history(data['exchange_rate_history'])
+    db.insert_exchange_rate(data['exchange_rate_latest'])
 
     print(f"[{datetime.now()}] Data update completed!")
+
+
+def update_exchange_rate_only():
+    """Fetch latest USD/EGP rate and update database"""
+    print(f"[{datetime.now()}] Updating latest exchange rate...")
+
+    from data_fetcher import EconomicDataFetcher
+    from database import EconomicDatabase
+
+    fetcher = EconomicDataFetcher()
+    db = EconomicDatabase()
+
+    db.create_tables()
+    latest = fetcher.fetch_exchange_rate()
+    db.insert_exchange_rate(latest)
+
+    print(f"[{datetime.now()}] Latest exchange rate updated!")
 
 
 def start_scheduler():
     """Start the background scheduler"""
     scheduler = BackgroundScheduler()
 
-    # Run every day at midnight
+    # Run every day at midnight (full refresh)
     scheduler.add_job(
         func=update_economic_data,
         trigger='cron',
         hour=0,
         minute=0,
         id='daily_update',
+        replace_existing=True
+    )
+
+    # Update exchange rate every 15 minutes
+    scheduler.add_job(
+        func=update_exchange_rate_only,
+        trigger='interval',
+        minutes=15,
+        id='hourly_exchange_update',
         replace_existing=True
     )
 

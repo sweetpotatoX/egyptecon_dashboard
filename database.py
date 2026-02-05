@@ -167,6 +167,35 @@ class EconomicDatabase:
         finally:
             self.close()
 
+    def insert_exchange_rate_history(self, df):
+        """Insert exchange rate history data from DataFrame"""
+        if df is None or df.empty:
+            return
+
+        if not self.connect():
+            return
+
+        try:
+            cursor = self.conn.cursor()
+            values = [(row['date'], row['usd_egp_rate']) for _, row in df.iterrows()]
+
+            execute_values(cursor, """
+                INSERT INTO exchange_rate_data (date, usd_egp_rate)
+                VALUES %s
+                ON CONFLICT (date) DO UPDATE
+                SET usd_egp_rate = EXCLUDED.usd_egp_rate
+            """, values)
+
+            self.conn.commit()
+            cursor.close()
+            print(f"Inserted {len(values)} exchange rate records")
+
+        except Exception as e:
+            print(f"Error inserting exchange rate history: {e}")
+            self.conn.rollback()
+        finally:
+            self.close()
+
     def get_all_gdp(self):
         """Retrieve all GDP data"""
         if not self.connect():
@@ -233,7 +262,8 @@ if __name__ == "__main__":
 
     db.insert_gdp_data(data['gdp'])
     db.insert_inflation_data(data['inflation'])
-    db.insert_exchange_rate(data['exchange_rate'])
+    db.insert_exchange_rate_history(data['exchange_rate_history'])
+    db.insert_exchange_rate(data['exchange_rate_latest'])
 
     print("\nRetrieved GDP data:")
     print(db.get_all_gdp().tail())
