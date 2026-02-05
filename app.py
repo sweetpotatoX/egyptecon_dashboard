@@ -3,6 +3,7 @@ Egypt Economic Dashboard
 Main Dash application with interactive charts
 """
 
+import os
 import dash
 from dash import dcc, html, Input, Output
 import plotly.graph_objs as go
@@ -20,8 +21,9 @@ server = app.server  # For gunicorn deployment
 # Initialize database
 db = EconomicDatabase()
 
-# Start background scheduler for daily updates
-scheduler = start_scheduler()
+# Start background scheduler for updates (opt-out for gunicorn)
+if os.getenv('ENABLE_SCHEDULER', '1') == '1':
+    scheduler = start_scheduler()
 
 # Color scheme
 COLORS = {

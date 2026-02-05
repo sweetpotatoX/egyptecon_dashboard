@@ -24,8 +24,21 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgresql://egyptecon:egyptecon_secure_password_change_me@db:5432/egyptecon
+      ENABLE_SCHEDULER: "0"
     ports:
       - "8050:8050"
+
+  scheduler:
+    build: .
+    container_name: egyptecon-scheduler
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://egyptecon:egyptecon_secure_password_change_me@db:5432/egyptecon
+      ENABLE_SCHEDULER: "1"
+    command: ["python", "scheduler.py"]
 
 volumes:
   postgres_data:
