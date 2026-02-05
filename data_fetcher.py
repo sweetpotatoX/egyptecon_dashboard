@@ -6,7 +6,13 @@ Fetches GDP, inflation, and exchange rate data from public APIs
 import os
 import requests
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
+
+
+_EGX30_CACHE = {
+    'timestamp': None,
+    'value': None
+}
 
 
 class EconomicDataFetcher:
@@ -17,6 +23,7 @@ class EconomicDataFetcher:
         self.exchange_base = "https://api.exchangerate.host/latest"
         self.exchange_timeseries = "https://api.exchangerate.host/timeseries"
         self.egx30_symbol = os.getenv('EGX30_SYMBOL', '^EGX30')
+        self.egx30_min_interval_sec = int(os.getenv('EGX30_MIN_INTERVAL_SEC', '300'))
         self.yahoo_chart_base = "https://query1.finance.yahoo.com/v8/finance/chart"
         self.start_year = 1980  # Data starts from 1980s
 
@@ -192,12 +199,21 @@ class EconomicDataFetcher:
         Returns: Dictionary with {date, egx30_index}
         """
         try:
+            now = datetime.now()
+            if _EGX30_CACHE['timestamp'] and _EGX30_CACHE['value']:
+                age = now - _EGX30_CACHE['timestamp']
+                if age < timedelta(seconds=self.egx30_min_interval_sec):
+                    return _EGX30_CACHE['value']
+
             url = f"{self.yahoo_chart_base}/{self.egx30_symbol}"
             params = {
                 'interval': '1m',
                 'range': '1d'
             }
-            response = requests.get(url, params=params, timeout=10)
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (compatible; EgypteconDashboard/1.0)'
+            }
+            response = requests.get(url, params=params, headers=headers, timeout=10)
             response.raise_for_status()
             data = response.json()
 
@@ -217,13 +233,18 @@ class EconomicDataFetcher:
             if price is None:
                 return None
 
-            return {
+            result = {
                 'date': datetime.now().replace(microsecond=0),
                 'egx30_index': round(float(price), 2)
             }
+            _EGX30_CACHE['timestamp'] = now
+            _EGX30_CACHE['value'] = result
+            return result
 
         except Exception as e:
             print(f"Error fetching EGX30: {e}")
+            if _EGX30_CACHE['value']:
+                return _EGX30_CACHE['value']
             return None
 
     def fetch_all_data(self):
