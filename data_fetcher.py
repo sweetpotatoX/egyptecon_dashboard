@@ -30,6 +30,9 @@ class EconomicDataFetcher:
         self.massive_api_key = os.getenv('MASSIVE_API_KEY')
         self.massive_base = "https://api.massive.com"
         self.egx30_ticker = os.getenv('EGX30_TICKER', 'I:EGX30')
+        self.eod_api_key = os.getenv('EOD_API_KEY')
+        self.eod_egx30_symbol = os.getenv('EGX30_EOD_SYMBOL', 'EGX30.INDX')
+        self.eod_base = "https://eodhd.com/api"
         self.yahoo_chart_base = "https://query1.finance.yahoo.com/v8/finance/chart"
         self.start_year = 1980  # Data starts from 1980s
 
