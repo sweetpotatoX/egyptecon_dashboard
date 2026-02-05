@@ -121,8 +121,8 @@ app.layout = html.Div([
                style={'textAlign': 'center', 'color': COLORS['secondary'], 'fontSize': 14}),
     ], style={'padding': '20px', 'backgroundColor': COLORS['background']}),
 
-    # Interval component for auto-refresh (every 24 hours)
-    dcc.Interval(id='interval-component', interval=86400000, n_intervals=0),
+    # Interval component for auto-refresh (every 1 minute)
+    dcc.Interval(id='interval-component', interval=60000, n_intervals=0),
 
 ], style={'fontFamily': 'Arial, sans-serif', 'backgroundColor': COLORS['background'], 'minHeight': '100vh'})
 
