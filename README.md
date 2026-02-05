@@ -14,8 +14,6 @@ A Dash-powered dashboard that tracks Egypt's key economic indicators with near r
 
 ## Screenshots and GIFs
 
-> Add your own screenshots/GIFs to the paths below (see `docs/assets/`).
-
 ![Dashboard overview](docs/assets/dashboard.png)
 ![Live updates](docs/assets/live-demo.gif)
 
