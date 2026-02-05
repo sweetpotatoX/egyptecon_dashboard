@@ -14,6 +14,7 @@ class EconomicDataFetcher:
     def __init__(self):
         self.world_bank_base = "https://api.worldbank.org/v2/country/EG/indicator"
         self.exchange_base = "https://api.exchangerate.host/latest"
+        self.exchange_timeseries = "https://api.exchangerate.host/timeseries"
         self.start_year = 1980  # Data starts from 1980s
 
     def fetch_gdp(self, years=None):
@@ -116,32 +117,36 @@ class EconomicDataFetcher:
 
     def fetch_exchange_rate_history(self):
         """
-        Fetch historical USD/EGP exchange rate from World Bank (annual)
+        Fetch historical USD/EGP exchange rate (daily where available)
         Returns: DataFrame with columns [date, usd_egp_rate]
         """
-        url = f"{self.world_bank_base}/PA.NUS.FCRF"
+        start_date = f"{self.start_year}-01-01"
+        end_date = datetime.now().strftime("%Y-%m-%d")
         params = {
-            'format': 'json',
-            'per_page': 1000,
-            'date': f'{self.start_year}:{datetime.now().year}'
+            'base': 'USD',
+            'symbols': 'EGP',
+            'start_date': start_date,
+            'end_date': end_date
         }
 
         try:
-            response = requests.get(url, params=params, timeout=10)
+            response = requests.get(self.exchange_timeseries, params=params, timeout=10)
             response.raise_for_status()
             data = response.json()
 
-            if len(data) < 2 or data[1] is None:
+            rates = data.get('rates')
+            if not rates:
                 print("No exchange rate history returned from API")
                 return pd.DataFrame()
 
             records = []
-            for item in data[1]:
-                if item['value'] is not None:
-                    date_obj = datetime(int(item['date']), 1, 1)
+            for date_str, rate_map in rates.items():
+                egp_rate = rate_map.get('EGP')
+                if egp_rate is not None:
+                    date_obj = datetime.strptime(date_str, "%Y-%m-%d")
                     records.append({
                         'date': date_obj,
-                        'usd_egp_rate': round(float(item['value']), 4)
+                        'usd_egp_rate': round(float(egp_rate), 4)
                     })
 
             df = pd.DataFrame(records)
@@ -169,7 +174,7 @@ class EconomicDataFetcher:
             egp_rate = data.get('rates', {}).get('EGP')
             if egp_rate:
                 return {
-                    'date': datetime.now().replace(hour=0, minute=0, second=0, microsecond=0),
+                    'date': datetime.now().replace(microsecond=0),
                     'usd_egp_rate': round(float(egp_rate), 2)
                 }
             return None

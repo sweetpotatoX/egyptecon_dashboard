@@ -63,10 +63,17 @@ class EconomicDatabase:
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS exchange_rate_data (
                     id SERIAL PRIMARY KEY,
-                    date DATE UNIQUE NOT NULL,
+                    date TIMESTAMP UNIQUE NOT NULL,
                     usd_egp_rate DECIMAL(10, 2),
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
+            """)
+
+            # Migrate existing DATE column to TIMESTAMP if needed
+            cursor.execute("""
+                ALTER TABLE exchange_rate_data
+                ALTER COLUMN date TYPE TIMESTAMP
+                USING date::timestamp
             """)
 
             self.conn.commit()

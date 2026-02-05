@@ -54,12 +54,13 @@ def start_scheduler():
     """Start the background scheduler"""
     scheduler = BackgroundScheduler()
 
-    # Run full refresh every hour
+    # Run full refresh every day at midnight
     scheduler.add_job(
         func=update_economic_data,
-        trigger='interval',
-        hours=1,
-        id='hourly_full_update',
+        trigger='cron',
+        hour=0,
+        minute=0,
+        id='daily_update',
         replace_existing=True
     )
 

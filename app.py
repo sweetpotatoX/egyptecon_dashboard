@@ -196,10 +196,10 @@ def update_charts(n_intervals, n_clicks):
             name='USD/EGP',
             line=dict(color=COLORS['exchange'], width=3),
             marker=dict(size=8),
-            hovertemplate='Date: %{x|%Y-%m-%d}<br>Rate: %{y:.2f} EGP<extra></extra>'
+            hovertemplate='Date: %{x|%Y-%m-%d %H:%M}<br>Rate: %{y:.2f} EGP<extra></extra>'
         ))
     exchange_fig.update_layout(
-        xaxis_title="Date",
+        xaxis_title="Date/Time",
         yaxis_title="Exchange Rate (EGP per USD)",
         hovermode='x unified',
         template='plotly_white',
