@@ -54,22 +54,21 @@ def start_scheduler():
     """Start the background scheduler"""
     scheduler = BackgroundScheduler()
 
-    # Run every day at midnight (full refresh)
+    # Run full refresh every hour
     scheduler.add_job(
         func=update_economic_data,
-        trigger='cron',
-        hour=0,
-        minute=0,
-        id='daily_update',
+        trigger='interval',
+        hours=1,
+        id='hourly_full_update',
         replace_existing=True
     )
 
-    # Update exchange rate every 15 minutes
+    # Update exchange rate every minute
     scheduler.add_job(
         func=update_exchange_rate_only,
         trigger='interval',
-        minutes=15,
-        id='hourly_exchange_update',
+        minutes=1,
+        id='minute_exchange_update',
         replace_existing=True
     )
 
