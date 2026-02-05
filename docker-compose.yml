@@ -1,0 +1,31 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: egyptecon-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: egyptecon
+      POSTGRES_PASSWORD: egyptecon_secure_password_change_me
+      POSTGRES_DB: egyptecon
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U egyptecon -d egyptecon"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: egyptecon-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://egyptecon:egyptecon_secure_password_change_me@db:5432/egyptecon
+    ports:
+      - "8050:8050"
+
+volumes:
+  postgres_data:

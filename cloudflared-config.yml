@@ -1,0 +1,32 @@
+# Cloudflare Tunnel Configuration for Egypt Economic Dashboard
+# Location: /etc/cloudflared/config.yml (on your Debian server)
+#
+# Before using this config:
+# 1. Install cloudflared:
+#    curl -L --output cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+#    sudo dpkg -i cloudflared.deb
+#
+# 2. Authenticate: cloudflared tunnel login
+#
+# 3. Create tunnel: cloudflared tunnel create egyptecon-dashboard
+#    This will output your TUNNEL_ID - replace <TUNNEL_ID> below
+#
+# 4. Route DNS:
+#    cloudflared tunnel route dns egyptecon-dashboard abdelrahmanbahaa.me
+#    cloudflared tunnel route dns egyptecon-dashboard www.abdelrahmanbahaa.me
+#
+# 5. Copy this file to /etc/cloudflared/config.yml (update TUNNEL_ID first)
+#
+# 6. Install as service:
+#    sudo cloudflared service install
+#    sudo systemctl enable cloudflared
+#    sudo systemctl start cloudflared
+
+tunnel: 9452bbaf-6d7c-439b-9ced-b82fde612b7a
+credentials-file: /root/.cloudflared/9452bbaf-6d7c-439b-9ced-b82fde612b7a.json
+
+ingress:
+  - hostname: egyptecon.abdelrahmanbahaa.me
+    service: http://localhost:8050
+  # Catch-all rule (required)
+  - service: http_status:404
