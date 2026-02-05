@@ -30,6 +30,7 @@ COLORS = {
     'gdp': '#3498db',
     'inflation': '#e74c3c',
     'exchange': '#2ecc71',
+    'egx30': '#9b59b6',
     'background': '#f8f9fa'
 }
 
@@ -90,6 +91,11 @@ app.layout = html.Div([
             html.H2(id='exchange-value', style={'color': COLORS['exchange'], 'margin': 0}),
         ], style={'flex': 1, 'textAlign': 'center', 'padding': '20px', 'backgroundColor': 'white',
                   'borderRadius': '10px', 'margin': '0 10px', 'boxShadow': '0 2px 5px rgba(0,0,0,0.1)'}),
+        html.Div([
+            html.H4("EGX30 Index", style={'color': COLORS['secondary'], 'marginBottom': 5}),
+            html.H2(id='egx30-value', style={'color': COLORS['egx30'], 'margin': 0}),
+        ], style={'flex': 1, 'textAlign': 'center', 'padding': '20px', 'backgroundColor': 'white',
+                  'borderRadius': '10px', 'margin': '0 10px', 'boxShadow': '0 2px 5px rgba(0,0,0,0.1)'}),
     ], style={'display': 'flex', 'justifyContent': 'center', 'marginBottom': 40, 'padding': '0 20px'}),
 
     # GDP Chart
@@ -113,9 +119,16 @@ app.layout = html.Div([
     ], style={'marginBottom': 40, 'backgroundColor': 'white', 'borderRadius': '10px',
               'padding': '20px', 'margin': '0 20px 40px 20px', 'boxShadow': '0 2px 5px rgba(0,0,0,0.1)'}),
 
+    # EGX30 Chart
+    html.Div([
+        html.H3("EGX30 Index", style={'color': COLORS['primary'], 'marginLeft': 20}),
+        dcc.Graph(id='egx30-chart', config={'displayModeBar': True, 'scrollZoom': True})
+    ], style={'marginBottom': 40, 'backgroundColor': 'white', 'borderRadius': '10px',
+              'padding': '20px', 'margin': '0 20px 40px 20px', 'boxShadow': '0 2px 5px rgba(0,0,0,0.1)'}),
+
     # Footer
     html.Div([
-        html.P("Data sources: World Bank API, Exchange Rate API",
+         html.P("Data sources: World Bank API, exchangerate.host, Yahoo Finance (unofficial)",
                style={'textAlign': 'center', 'color': COLORS['secondary'], 'fontSize': 14}),
         html.P("Built by Abdelrahman Bahaa",
                style={'textAlign': 'center', 'color': COLORS['secondary'], 'fontSize': 14}),
@@ -131,10 +144,12 @@ app.layout = html.Div([
     [Output('gdp-chart', 'figure'),
      Output('inflation-chart', 'figure'),
      Output('exchange-chart', 'figure'),
+    Output('egx30-chart', 'figure'),
      Output('last-update', 'children'),
      Output('gdp-value', 'children'),
      Output('inflation-value', 'children'),
-     Output('exchange-value', 'children')],
+    Output('exchange-value', 'children'),
+    Output('egx30-value', 'children')],
     [Input('interval-component', 'n_intervals'),
      Input('refresh-button', 'n_clicks')]
 )
@@ -145,6 +160,7 @@ def update_charts(n_intervals, n_clicks):
     gdp_df = db.get_all_gdp()
     inflation_df = db.get_all_inflation()
     exchange_df = db.get_all_exchange_rates()
+    egx30_df = db.get_all_egx30()
 
     # GDP Chart
     gdp_fig = go.Figure()
@@ -206,6 +222,26 @@ def update_charts(n_intervals, n_clicks):
         margin=dict(l=50, r=30, t=30, b=50)
     )
 
+    # EGX30 Chart
+    egx30_fig = go.Figure()
+    if not egx30_df.empty:
+        egx30_fig.add_trace(go.Scatter(
+            x=egx30_df['date'],
+            y=egx30_df['egx30_index'],
+            mode='lines+markers',
+            name='EGX30',
+            line=dict(color=COLORS['egx30'], width=3),
+            marker=dict(size=6),
+            hovertemplate='Date: %{x|%Y-%m-%d %H:%M}<br>Index: %{y:.2f}<extra></extra>'
+        ))
+    egx30_fig.update_layout(
+        xaxis_title="Date/Time",
+        yaxis_title="EGX30 Index",
+        hovermode='x unified',
+        template='plotly_white',
+        margin=dict(l=50, r=30, t=30, b=50)
+    )
+
     # Last update time
     last_update = f"Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
 
@@ -213,8 +249,19 @@ def update_charts(n_intervals, n_clicks):
     gdp_value = f"${gdp_df.iloc[-1]['gdp_billions_usd']:.2f}B" if not gdp_df.empty else "N/A"
     inflation_value = f"{inflation_df.iloc[-1]['inflation_rate']:.2f}%" if not inflation_df.empty else "N/A"
     exchange_value = f"{exchange_df.iloc[-1]['usd_egp_rate']:.2f} EGP" if not exchange_df.empty else "N/A"
+    egx30_value = f"{egx30_df.iloc[-1]['egx30_index']:.2f}" if not egx30_df.empty else "N/A"
 
-    return gdp_fig, inflation_fig, exchange_fig, last_update, gdp_value, inflation_value, exchange_value
+    return (
+        gdp_fig,
+        inflation_fig,
+        exchange_fig,
+        egx30_fig,
+        last_update,
+        gdp_value,
+        inflation_value,
+        exchange_value,
+        egx30_value
+    )
 
 
 # PDF download route

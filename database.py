@@ -69,6 +69,16 @@ class EconomicDatabase:
                 )
             """)
 
+            # EGX30 index table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS egx30_data (
+                    id SERIAL PRIMARY KEY,
+                    date TIMESTAMP UNIQUE NOT NULL,
+                    egx30_index DECIMAL(12, 2),
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+
             # Migrate existing DATE column to TIMESTAMP if needed
             cursor.execute("""
                 ALTER TABLE exchange_rate_data
@@ -203,6 +213,34 @@ class EconomicDatabase:
         finally:
             self.close()
 
+    def insert_egx30_latest(self, data):
+        """Insert single EGX30 index record"""
+        if not data:
+            return
+
+        if not self.connect():
+            return
+
+        try:
+            cursor = self.conn.cursor()
+
+            cursor.execute("""
+                INSERT INTO egx30_data (date, egx30_index)
+                VALUES (%s, %s)
+                ON CONFLICT (date) DO UPDATE
+                SET egx30_index = EXCLUDED.egx30_index
+            """, (data['date'], data['egx30_index']))
+
+            self.conn.commit()
+            cursor.close()
+            print("Inserted EGX30 index")
+
+        except Exception as e:
+            print(f"Error inserting EGX30 index: {e}")
+            self.conn.rollback()
+        finally:
+            self.close()
+
     def get_all_gdp(self):
         """Retrieve all GDP data"""
         if not self.connect():
@@ -245,16 +283,32 @@ class EconomicDatabase:
         finally:
             self.close()
 
+    def get_all_egx30(self):
+        """Retrieve all EGX30 index data"""
+        if not self.connect():
+            return pd.DataFrame()
+
+        try:
+            df = pd.read_sql("SELECT date, egx30_index FROM egx30_data ORDER BY date", self.conn)
+            return df
+        except Exception as e:
+            print(f"Error retrieving EGX30 data: {e}")
+            return pd.DataFrame()
+        finally:
+            self.close()
+
     def get_latest_data(self):
         """Get latest values for all indicators"""
         gdp_df = self.get_all_gdp()
         inflation_df = self.get_all_inflation()
         exchange_df = self.get_all_exchange_rates()
+        egx30_df = self.get_all_egx30()
 
         return {
             'gdp': gdp_df.iloc[-1].to_dict() if not gdp_df.empty else None,
             'inflation': inflation_df.iloc[-1].to_dict() if not inflation_df.empty else None,
-            'exchange_rate': exchange_df.iloc[-1].to_dict() if not exchange_df.empty else None
+            'exchange_rate': exchange_df.iloc[-1].to_dict() if not exchange_df.empty else None,
+            'egx30': egx30_df.iloc[-1].to_dict() if not egx30_df.empty else None
         }
 
 
@@ -271,6 +325,7 @@ if __name__ == "__main__":
     db.insert_inflation_data(data['inflation'])
     db.insert_exchange_rate_history(data['exchange_rate_history'])
     db.insert_exchange_rate(data['exchange_rate_latest'])
+    db.insert_egx30_latest(data['egx30_latest'])
 
     print("\nRetrieved GDP data:")
     print(db.get_all_gdp().tail())

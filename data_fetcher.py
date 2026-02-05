@@ -3,6 +3,7 @@ Economic Data Fetcher
 Fetches GDP, inflation, and exchange rate data from public APIs
 """
 
+import os
 import requests
 import pandas as pd
 from datetime import datetime
@@ -15,6 +16,8 @@ class EconomicDataFetcher:
         self.world_bank_base = "https://api.worldbank.org/v2/country/EG/indicator"
         self.exchange_base = "https://api.exchangerate.host/latest"
         self.exchange_timeseries = "https://api.exchangerate.host/timeseries"
+        self.egx30_symbol = os.getenv('EGX30_SYMBOL', '^EGX30')
+        self.yahoo_chart_base = "https://query1.finance.yahoo.com/v8/finance/chart"
         self.start_year = 1980  # Data starts from 1980s
 
     def fetch_gdp(self, years=None):
@@ -183,6 +186,46 @@ class EconomicDataFetcher:
             print(f"Error fetching exchange rate: {e}")
             return None
 
+    def fetch_egx30_latest(self):
+        """
+        Fetch latest EGX30 index level (best-effort, unofficial source)
+        Returns: Dictionary with {date, egx30_index}
+        """
+        try:
+            url = f"{self.yahoo_chart_base}/{self.egx30_symbol}"
+            params = {
+                'interval': '1m',
+                'range': '1d'
+            }
+            response = requests.get(url, params=params, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+
+            result = (data.get('chart', {}) or {}).get('result')
+            if not result:
+                print("No EGX30 data returned from API")
+                return None
+
+            meta = result[0].get('meta', {})
+            price = meta.get('regularMarketPrice')
+            if price is None:
+                quote = result[0].get('indicators', {}).get('quote', [])
+                closes = quote[0].get('close') if quote else None
+                if closes:
+                    price = next((v for v in reversed(closes) if v is not None), None)
+
+            if price is None:
+                return None
+
+            return {
+                'date': datetime.now().replace(microsecond=0),
+                'egx30_index': round(float(price), 2)
+            }
+
+        except Exception as e:
+            print(f"Error fetching EGX30: {e}")
+            return None
+
     def fetch_all_data(self):
         """
         Fetch all economic indicators
@@ -192,7 +235,8 @@ class EconomicDataFetcher:
             'gdp': self.fetch_gdp(),
             'inflation': self.fetch_inflation(),
             'exchange_rate_history': self.fetch_exchange_rate_history(),
-            'exchange_rate_latest': self.fetch_exchange_rate()
+            'exchange_rate_latest': self.fetch_exchange_rate(),
+            'egx30_latest': self.fetch_egx30_latest()
         }
 
 
