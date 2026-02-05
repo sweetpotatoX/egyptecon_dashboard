@@ -13,7 +13,7 @@ class EconomicDataFetcher:
 
     def __init__(self):
         self.world_bank_base = "https://api.worldbank.org/v2/country/EG/indicator"
-        self.exchange_base = "https://api.exchangerate-api.com/v4/latest/USD"
+        self.exchange_base = "https://api.exchangerate.host/latest"
         self.start_year = 1980  # Data starts from 1980s
 
     def fetch_gdp(self, years=None):
@@ -158,11 +158,15 @@ class EconomicDataFetcher:
         Returns: Dictionary with {date, usd_egp_rate}
         """
         try:
-            response = requests.get(self.exchange_base, timeout=10)
+            params = {
+                'base': 'USD',
+                'symbols': 'EGP'
+            }
+            response = requests.get(self.exchange_base, params=params, timeout=10)
             response.raise_for_status()
             data = response.json()
 
-            egp_rate = data['rates'].get('EGP')
+            egp_rate = data.get('rates', {}).get('EGP')
             if egp_rate:
                 return {
                     'date': datetime.now().replace(hour=0, minute=0, second=0, microsecond=0),
